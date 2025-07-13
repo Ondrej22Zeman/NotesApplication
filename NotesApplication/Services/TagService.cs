@@ -1,56 +1,95 @@
-﻿namespace NotesApplication.Services;
+﻿using AutoMapper;
+using NotesApplication.DTOs.Tag;
+using System.Linq;
+using NotesApplication.Repositories;
+
+namespace NotesApplication.Services;
 
 using Data;
 using Models;
 
 public class TagService : ITagService
 {
-    private readonly NotesDbContext _context;
+    private readonly ITagRepository _tagRepository;
+    private readonly IMapper _mapper;
 
-    public TagService(NotesDbContext context)
+    public TagService(ITagRepository tagRepository, IMapper mapper)
     {
-        _context = context;
+        _tagRepository = tagRepository;
+        _mapper = mapper;
     }
 
-    public List<Tag> GetTags()
+    public async Task<IEnumerable<TagReadDto>> GetAsync()
     {
-        var tags = _context.Tags.ToList();
-        return tags;
+        var tags = await _tagRepository.GetAllAsync();
+
+        var tagDtos = tags.Select(t => _mapper.Map<Tag, TagReadDto>(t));
+        
+        return tagDtos;
     }
 
-    public Tag GetTagById(int id)
+    public async Task<TagReadDto?> GetByIdAsync(Guid id)
     {
-        Tag tag = _context.Tags.FirstOrDefault(t => t.Id == id);
-        return tag;
+        var tag = await _tagRepository.GetByIdAsync(id);
+        
+        if (tag is null) throw new Exception("Tag could not be found");
+
+        return _mapper.Map<Tag, TagReadDto>(tag);
     }
 
-    public bool CreateTag(Tag tag)
+    public async Task<TagReadDto> CreateAsync(TagCreateDto tagDto)
     {
-        _context.Tags.Add(tag);
-        var changes = _context.SaveChanges();
+        var tag = _mapper.Map<TagCreateDto, Tag>(tagDto);
+        tag = await _tagRepository.CreateAsync(tag);
 
-        return changes > 0;
+        await _tagRepository.SaveChangesAsync();
+
+        return _mapper.Map<Tag, TagReadDto>(tag);
     }
 
-    public bool UpdateTag(Tag tag)
+    public async Task<TagReadDto> UpdateAsync(TagUpdateDto tagDto, Guid id)
     {
-        _context.Tags.Update(tag);
-        var changes = _context.SaveChanges();
+        var tag = await _tagRepository.GetByIdAsync(id);
 
-        return changes > 0;
-    }
-
-    public bool DeleteTag(int id)
-    {
-        var Tag = _context.Tags.FirstOrDefault(t => t.Id == id);
-        if (Tag != null)
+        if (tag == null)
         {
-            _context.Tags.Remove(Tag);
-            _context.SaveChanges();
-
-            return true;
+            throw new Exception("Tag could not be found");
         }
 
-        return false;
+        _mapper.Map(tagDto, tag);
+
+        var updatedTag = _tagRepository.Update(tag);
+        await _tagRepository.SaveChangesAsync();
+
+        return _mapper.Map<TagReadDto>(updatedTag);
+    }
+
+    public async Task DeleteAsync(Guid id)
+    {
+        var tagToDelete = await _tagRepository.GetByIdAsync(id);
+        
+        if (tagToDelete == null)
+        {
+            throw new Exception("Could not find tag");
+        }
+        
+        _tagRepository.Delete(tagToDelete);
+
+        await _tagRepository.SaveChangesAsync();
+    }
+
+    public async Task<IEnumerable<TagReadDto>> GetByIdsAsync(IEnumerable<Guid> ids)
+    {
+        ids = ids.ToList();
+        var tags = (await _tagRepository.GetByIdsAsync(ids)).ToList();
+
+        if (tags.Count() != ids.Count())
+        {
+            throw new Exception("Some tags not found");
+        }
+
+        var tagDtos = tags.Select(t => _mapper.Map<TagReadDto>(t));
+
+        return tagDtos;
     }
 }

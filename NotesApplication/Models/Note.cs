@@ -1,14 +1,20 @@
-﻿namespace NotesApplication.Models;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace NotesApplication.Models;
 
 public class Note
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
     
     public string Title { get; set; }
     
     public string Content { get; set; }
     
+    [ForeignKey("User")]
     public Guid UserId { get; set; }
+    
+    public virtual User User { get; set; }
 
-    public List<Tag> Tags { get; set; } = new();
+    public virtual ICollection<Tag> Tags { get; set; } = new List<Tag>();
+
 }

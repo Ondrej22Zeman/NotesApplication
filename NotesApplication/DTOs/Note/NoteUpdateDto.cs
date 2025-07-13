@@ -1,9 +1,7 @@
 ﻿namespace NotesApplication.DTOs;
 
-public class NoteDto
+public class NoteUpdateDto
 {
-    public int Id { get; set; }
     public string Title { get; set; }
     public string Content { get; set; }
-    public List<string> Tags { get; set; }
 }

@@ -1,81 +1,114 @@
-﻿namespace NotesApplication.Services;
+﻿using AutoMapper;
+using NotesApplication.DTOs;
+using NotesApplication.Repositories;
+
+namespace NotesApplication.Services;
 
 using Data;
 using Models;
 
 public class NoteService : INoteService
 {
-    private readonly NotesDbContext _context;
+    private readonly INoteRepository _noteRepository;
+    private readonly ITagRepository _tagRepository;
+    private readonly IMapper _mapper;
 
-    public NoteService(NotesDbContext context)
+    public NoteService(INoteRepository noteRepository, ITagRepository tagRepository, IMapper mapper)
     {
-        _context = context;
+        _noteRepository = noteRepository;
+        _tagRepository = tagRepository;
+        _mapper = mapper;
     }
 
-    public List<Note> GetNotes()
+    public async Task<IEnumerable<NoteReadDto>> GetNotesAsync()
     {
-        var notes = _context.Notes.ToList();
-        return notes;
+        var notes = await _noteRepository.GetAllAsync();
+        var dtoNotes = notes.Select(n => _mapper.Map<NoteReadDto>(n));
+        return dtoNotes;
     }
 
-    public Note GetNoteById(int id)
+    public async Task<NoteReadDto?> GetNoteByIdAsync(Guid id)
     {
-        Note note = _context.Notes.FirstOrDefault(n => n.Id == id);
-        return note;
+        var note = await _noteRepository.GetByIdAsync(id);
+        
+        if (note is null)
+            return null;
+        
+        return _mapper.Map<NoteReadDto>(note);
     }
 
-    public bool CreateNote(Note note)
+    public async Task<NoteReadDto> CreateNoteAsync(NoteCreateDto noteDto)
     {
-        _context.Notes.Add(note);
-        var changes = _context.SaveChanges();
-
-        return changes > 0;
+        
+        var note = _mapper.Map<NoteCreateDto, Note>(noteDto);
+        
+        var createdNote =  await _noteRepository.CreateAsync(note);
+        
+        await _noteRepository.SaveChangesAsync();
+        
+        return _mapper.Map<Note, NoteReadDto>(createdNote);
     }
 
-    public bool UpdateNote(Note note)
+    public async Task<NoteReadDto> UpdateNoteAsync(NoteUpdateDto dto, Guid id)
     {
-        _context.Notes.Update(note);
-        var changes = _context.SaveChanges();
+        var note = await _noteRepository.GetByIdAsync(id);
 
-        return changes > 0;
-    }
-
-    public bool DeleteNote(int id)
-    {
-        var note = _context.Notes.FirstOrDefault(n => n.Id == id);
-
-        if (note != null)
+        if (note == null)
         {
-            _context.Notes.Remove(GetNoteById(id));
-            _context.SaveChanges();
-            return true;
+            throw new Exception("Note could not be found");
         }
         
-        return false;
+        _mapper.Map(dto, note);
+        
+        var updatedNote = _noteRepository.Update(note);
+        await _noteRepository.SaveChangesAsync();
+
+        return _mapper.Map<Note, NoteReadDto>(updatedNote);
     }
 
-    public bool AddTag(int noteId, int tagId)
+    public async Task DeleteNoteAsync(Guid id)
     {
-        var note = _context.Notes.FirstOrDefault(n => n.Id == noteId);
-        var tag = _context.Tags.FirstOrDefault(t => t.Id == tagId);
-        if (tag == null || note == null)
+        var note = await _noteRepository.GetByIdAsync(id);
+
+        if (note == null)
         {
-            return false;
+            throw new Exception("Note could not be found");
         }
+        
+        _noteRepository.Delete(note);
+        await _noteRepository.SaveChangesAsync();
+    }
+
+    public async Task<NoteReadDto> AddTagToNoteAsync(Guid noteId, Guid tagId)
+    {
+        var tag = await _tagRepository.GetByIdAsync(tagId);
+        if (tag == null) throw new Exception("Tag could not be found");
+
+        var note = await _noteRepository.GetByIdAsync(noteId);
+        if (note == null) throw new Exception("Note could not be found");
+        
         note.Tags.Add(tag);
-        return UpdateNote(note);
+        _noteRepository.Update(note);
+        await _noteRepository.SaveChangesAsync();
+
+        return _mapper.Map<NoteReadDto>(note);
     }
 
-    public bool RemoveTag(int noteId, int tagId)
+    public async Task RemoveTagFromNoteAsync(Guid noteId, Guid tagId)
     {
-        var note = _context.Notes.FirstOrDefault(n => n.Id == noteId);
-        var tag = _context.Tags.FirstOrDefault(t => t.Id == tagId);
+        var tag = await _tagRepository.GetByIdAsync(tagId);
+        if (tag == null) 
+            throw new Exception("Tag could not be found");
+
+        var note = await _noteRepository.GetByIdAsync(noteId);
+        if (note == null) 
+            throw new Exception("Note could not be found");
         
-        if (tag == null || note == null)
-        {
-            return false;
-        }
+        if (!note.Tags.Contains(tag))
+            throw new Exception("Tag is not assigned to this note");
+        
         note.Tags.Remove(tag);
-        return UpdateNote(note);
+        _noteRepository.Update(note);
+        await _noteRepository.SaveChangesAsync();
     }
 }
