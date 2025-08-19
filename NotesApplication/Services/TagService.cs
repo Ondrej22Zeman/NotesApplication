@@ -32,7 +32,7 @@ public class TagService : ITagService
     {
         var tag = await _tagRepository.GetByIdAsync(id);
         
-        if (tag is null) throw new Exception("Tag could not be found");
+        if (tag is null) throw new Exception($"Tag could not be found, id = {id}");
 
         return _mapper.Map<Tag, TagReadDto>(tag);
     }
@@ -53,7 +53,7 @@ public class TagService : ITagService
 
         if (tag == null)
         {
-            throw new Exception("Tag could not be found");
+            throw new KeyNotFoundException($"Tag could not be found, id = {id}");
         }
 
         _mapper.Map(tagDto, tag);
@@ -69,9 +69,7 @@ public class TagService : ITagService
         var tagToDelete = await _tagRepository.GetByIdAsync(id);
         
         if (tagToDelete == null)
-        {
-            throw new Exception("Could not find tag");
-        }
+            throw new KeyNotFoundException($"Tag could not be found, id = {id}");
         
         _tagRepository.Delete(tagToDelete);
 
@@ -85,7 +83,7 @@ public class TagService : ITagService
 
         if (tags.Count() != ids.Count())
         {
-            throw new Exception("Some tags not found");
+            throw new KeyNotFoundException("Some tags not found");
         }
 
         var tagDtos = tags.Select(t => _mapper.Map<TagReadDto>(t));

@@ -1,6 +1,6 @@
 ﻿namespace NotesApplication.DTOs;
 
-public class NoteReadDto
+public class NoteReadDetailDto
 {
     public Guid Id { get; set; }
     public string Title { get; set; }

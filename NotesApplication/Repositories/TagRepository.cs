@@ -10,8 +10,10 @@ public class TagRepository : Repository<Tag>, ITagRepository
 
     public async Task<IEnumerable<Tag>> GetByIdsAsync(IEnumerable<Guid> ids)
     {
-        var tags = await _dbSet.Where(t => ids.Contains(t.Id)).ToListAsync();
+        var tags = (await GetAllAsync()).ToList();
 
-        return tags;
+        var tagsByIds = tags.Where(t => ids.Contains(t.Id));
+            
+        return tagsByIds;
     }
 }

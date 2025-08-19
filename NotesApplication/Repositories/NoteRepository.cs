@@ -10,6 +10,8 @@ public class NoteRepository : Repository<Note>, INoteRepository
 
     public async Task<IEnumerable<Note>> GetByUserIdAsync(Guid userId)
     {
-        return await _dbSet.Where(n => n.UserId == userId).ToListAsync();
+        var notes = await GetAllAsync();
+
+        return notes.Where(n => n.UserId == userId);
     }
 }

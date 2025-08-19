@@ -29,11 +29,12 @@ public class UserService: IUserService
         return usersDto;
     }
 
-    public async Task<UserReadDto?> GetByIdAsync(Guid userId)
+    public async Task<UserReadDto?> GetByIdAsync(Guid id)
     {
-        var user = await _userRepository.GetByIdAsync(userId);
+        var user = await _userRepository.GetByIdAsync(id);
 
-        if (user == null) return null;
+        if (user == null) 
+            throw new KeyNotFoundException($"User could not be found, id = {id}");
         
         return _mapper.Map<UserReadDto>(user);
     }
@@ -54,7 +55,8 @@ public class UserService: IUserService
     {
         var user = await _userRepository.GetByIdAsync(id);
         
-        if (user == null) throw new Exception("User could not be found");
+        if (user == null) 
+            throw new KeyNotFoundException($"User could not be found, id = {id}");
         
         _mapper.Map(userDto, user);
         
@@ -70,7 +72,8 @@ public class UserService: IUserService
     {
         var userToDelete = await _userRepository.GetByIdAsync(id);
         
-        if (userToDelete == null) throw new Exception("User could not be found");
+        if (userToDelete == null) 
+            throw new KeyNotFoundException($"User could not be found, id = {id}");
         
         _userRepository.Delete(userToDelete);
         await _userRepository.SaveChangesAsync();

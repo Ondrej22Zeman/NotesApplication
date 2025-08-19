@@ -1,0 +1,11 @@
+﻿add azure authentication/authorization
+add logging
+restructure project for new way of user logic (saving manually users from azure to DB)
+ - optional - add periodic check for ALL users from azure - DELETE/CREATE users based on azure data
+add kafka
+add caching
+add unit/integration tests
+add frontend?
+
+
+profit

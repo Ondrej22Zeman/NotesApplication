@@ -3,11 +3,13 @@
 namespace NotesApplication.Controllers;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Models;
 using Services;
 
 [ApiController]
 [Route("[controller]")]
+[Authorize]
 public class TagController : ControllerBase
 {
     private readonly ITagService _tagService;
@@ -26,14 +28,14 @@ public class TagController : ControllerBase
     }
 
     [HttpGet("{id}", Name = "GetTag")]
-    public async Task<ActionResult<TagReadDto?>> GetTag(Guid id)
+    public async Task<ActionResult<TagReadDto>> GetTagAsync(Guid id)
     {
         try
         {
             var tagDto = await _tagService.GetByIdAsync(id);
             return Ok(tagDto);
         }
-        catch (Exception e)
+        catch (KeyNotFoundException e)
         {
             return NotFound(e.Message);
         }
@@ -44,7 +46,7 @@ public class TagController : ControllerBase
     {
         var createdTag = await _tagService.CreateAsync(tagDto);
 
-        return CreatedAtRoute(nameof(GetTag), new { id = createdTag.Id }, createdTag);
+        return CreatedAtRoute(nameof(GetTagAsync), new { id = createdTag.Id }, createdTag);
     }
 
     [HttpPut("{id}")]
@@ -55,7 +57,7 @@ public class TagController : ControllerBase
             var updatedTag = await _tagService.UpdateAsync(tagDto, id);
             return Ok(updatedTag);
         }
-        catch (Exception e)
+        catch (KeyNotFoundException e)
         {
             return NotFound(e.Message);
         }
@@ -70,7 +72,7 @@ public class TagController : ControllerBase
             await _tagService.DeleteAsync(id);
             return NoContent();
         }
-        catch (Exception e)
+        catch (KeyNotFoundException e)
         {
             return NotFound(e.Message);
         }
@@ -84,7 +86,7 @@ public class TagController : ControllerBase
             var tagDtos = await _tagService.GetByIdsAsync(ids);
             return Ok(tagDtos);
         }
-        catch (Exception e)
+        catch (KeyNotFoundException e)
         {
             return NotFound(e.Message);
         }
